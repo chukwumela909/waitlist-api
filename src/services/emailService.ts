@@ -313,7 +313,7 @@ class EmailService {
 
             <p class="message">
                 We're absolutely thrilled to have you join our exclusive waitlist! Your email
-                <span class="email-highlight">${email}</span> has been successfully registered.
+                <span class="">${email}</span> has been successfully registered.
             </p>
 
             <div class="features">
