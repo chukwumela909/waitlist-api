@@ -7,7 +7,7 @@ import catchAll404Errors from './middlewares/catchAll404Errors';
 import globalErrorHandler from './middlewares/errorHandler';
 import { healthCheck } from './utils/health';
 import { connectToDatabase } from './configs/dbConfig';
-import { rateLimiter } from './configs/rateLimitConfig';
+// import { rateLimiter } from './configs/rateLimitConfig';
 
 import './configs/sentryConfig';
 import { routes } from './routes';
@@ -18,7 +18,7 @@ const app = express();
 connectToDatabase();
 
 // Rate limiting - Apply to all requests
-app.use(rateLimiter);
+// app.use(rateLimiter);
 
 // Middleware
 app.use(cors());
