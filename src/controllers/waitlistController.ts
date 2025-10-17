@@ -17,7 +17,7 @@ export class WaitlistController {
         return;
       }
 
-      const { email } = value;
+      const { email, role } = value;
 
       // Check if user already exists
       const existingUser = await User.findOne({ email });
@@ -29,8 +29,8 @@ export class WaitlistController {
         return;
       }
 
-      // Create new user
-      const user = new User({ email });
+      // Create new user with optional role
+      const user = new User({ email, ...(role && { role }) });
       await user.save();
 
       // Send confirmation email

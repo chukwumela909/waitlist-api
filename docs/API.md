@@ -13,8 +13,15 @@ POST `/api/waitlist`
 
 Request body:
 ```
-{ "email": "user@example.com" }
+{ 
+  "email": "user@example.com",
+  "role": "developer" // optional
+}
 ```
+
+**Fields:**
+- `email` (required): Valid email address
+- `role` (optional): User's role/position (e.g., "developer", "designer", "student")
 
 Possible responses:
 - 201 (success, email sent)
@@ -78,15 +85,32 @@ Other internal error formats (`{ status: "error" | "fail", ... }`) are not expec
 ## Minimal Client Pseudocode
 
 ```ts
-async function joinWaitlist(email: string) {
-  const res = await fetch('/api/waitlist', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email })
-  });
-  const data = await res.json();
-  if (res.ok && data.success) return { ok: true, message: data.message };
-  return { ok: false, message: data.error || data.message || 'Try again later' };
+async function joinWaitlist(email: string, role?: string) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+  try {
+    const res = await fetch('/api/waitlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, role }),
+      signal: controller.signal,
+    });
+    let data = {};
+    try { data = await res.json(); } catch (_) { /* ignore parse */ }
+    if (res.ok && data.success) {
+      return { ok: true, message: data.message || 'Successfully joined.' };
+    }
+    // Handle known error shapes including rate limit
+    const msg = data.error || data.message || 'Something went wrong. Please try again later.';
+    return { ok: false, status: res.status, message: msg };
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      return { ok: false, status: 0, message: 'Request timed out. Check your connection and try again.' };
+    }
+    return { ok: false, status: 0, message: 'Network error. Please check connection.' };
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 ```
 
@@ -104,7 +128,7 @@ Frontend: show a polite cooldown message; optional: back off for the remainder o
 ```
 curl -X POST "http://localhost:3000/api/waitlist" \
   -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com"}'
+  -d '{"email":"user@example.com","role":"developer"}'
 
 curl http://localhost:3000/api/waitlist/stats
 ```
