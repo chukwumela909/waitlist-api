@@ -15,7 +15,9 @@ class EmailService {
         });
     }
 
-    private getConfirmationEmailHTML(email: string): string {
+    private getConfirmationEmailHTML(email: string, fullName: string, primarySkill: string): string {
+        const firstName = fullName.split(' ')[0];
+        
         return `
         <!DOCTYPE html>
 <html lang="en">
@@ -23,7 +25,7 @@ class EmailService {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to TaskHub Waitlist!</title>
+    <title>Welcome to Task Hub Waitlist!</title>
     <style>
         * {
             margin: 0;
@@ -309,38 +311,46 @@ class EmailService {
         </div>
 
         <div class="content">
-            <h2 class="welcome-text">Hi there, productivity champion! 👋</h2>
+            <h2 class="welcome-text">Hi ${firstName}! 👋</h2>
 
             <p class="message">
-                We're absolutely thrilled to have you join our exclusive waitlist! Your email
-                <span class="">${email}</span> has been successfully registered.
+                We're absolutely thrilled to have you join our exclusive waitlist as a <strong>${primarySkill}</strong> professional! 
+                Your email <span class="">${email}</span> has been successfully registered.
             </p>
 
             <div class="features">
                 <h3>🚀 What's coming your way:</h3>
                 <ul class="feature-list">
-                    <li>Early access to TaskHub's revolutionary features</li>
-                    <li>Exclusive beta testing opportunities</li>
-                    <li>Direct line to our product team for feedback</li>
+                    <li><strong>Priority Placement:</strong> As a waitlist member, you'll get first access when we launch</li>
+                    <li><strong>Verified Client Leads:</strong> Connect with clients actively looking for ${primarySkill.toLowerCase()} services</li>
+                    <li><strong>No Hidden Fees:</strong> Transparent pricing with no unfair commissions</li>
+                    <li><strong>Exclusive Beta Access:</strong> Help shape Task Hub with your feedback</li>
                 </ul>
             </div>
 
             <div class="divider"></div>
 
             <p class="message">
-                We're working around the clock to bring you the most intuitive task management
-                experience ever created. Get ready to transform the way you organize your life! ⚡
+                We're building the platform that service providers deserve – one that puts <em>you</em> first. 
+                Get ready to grow your business and connect with clients who value your skills! ⚡
+            </p>
+
+            <p class="message" style="margin-top: 20px;">
+                <strong>Next Steps:</strong><br>
+                1. Follow us on social media for launch updates<br>
+                2. Keep an eye on your inbox for early access notifications<br>
+                3. Tell your fellow service providers about Task Hub!
             </p>
 
         </div>
 
         <div class="footer">
             <div class="footer-content">
-                <p>Thank you for believing in our mission! 🙏</p>
+                <p>Thank you for trusting Task Hub with your business growth! 🙏</p>
                  <img src="https://res.cloudinary.com/daf6mdwkh/image/upload/v1750868774/20250614_185641_iwuj1n.png"
-                    alt="TaskHub Logo" height="70">
+                    alt="Task Hub Logo" height="70">
             </div>
-            <a href="#" class="mailchimp-credit">mailchimp</a>
+            <a href="#" class="mailchimp-credit">Task Hub</a>
         </div>
     </div>
 </body>
@@ -349,12 +359,12 @@ class EmailService {
     `;
     }
 
-    async sendConfirmationEmail(email: string): Promise<void> {
+    async sendConfirmationEmail(email: string, fullName: string, primarySkill: string): Promise<void> {
         await this.transporter.sendMail({
-            from: 'No reply <hello@ngtaskhub.com>',
+            from: 'Task Hub <hello@ngtaskhub.com>',
             to: email,
-            subject: '🎉 Welcome to our waitlist!',
-            html: this.getConfirmationEmailHTML(email)
+            subject: `🎉 Welcome to Task Hub, ${fullName.split(' ')[0]}!`,
+            html: this.getConfirmationEmailHTML(email, fullName, primarySkill)
         });
     }
 }

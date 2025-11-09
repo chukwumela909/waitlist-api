@@ -2,24 +2,34 @@
 import { Request, Response } from 'express';
 import { User, IUser } from '../models/user';
 import { emailService } from '../services/emailService';
-import { emailValidation } from '../validation/emailValidation';
+import { waitlistValidation } from '../validation/emailValidation';
 
 export class WaitlistController {
   async joinWaitlist(req: Request, res: Response): Promise<void> {
     try {
-      // Validate email
-      const { error, value } = emailValidation.validate(req.body);
+      // Validate all form fields
+      const { error, value } = waitlistValidation.validate(req.body, { 
+        abortEarly: false,
+        stripUnknown: true 
+      });
+      
       if (error) {
+        const errorMessage = error.details[0]?.message || 'Validation failed';
         res.status(400).json({
           success: false,
-          error: 'Please provide a valid email address'
+          error: errorMessage,
+          details: error.details.map(d => ({
+            field: d.path.join('.'),
+            message: d.message
+          }))
         });
         return;
       }
 
-      const { email, role } = value;
+      const { email, fullName, phoneNumber, primarySkill, otherService, city, state, 
+              yearsOfExperience, portfolioLink, notifyEarlyAccess, agreedToTerms } = value;
 
-      // Check if user already exists
+      // Check if email already exists
       const existingUser = await User.findOne({ email });
       if (existingUser) {
         res.status(409).json({
@@ -29,13 +39,26 @@ export class WaitlistController {
         return;
       }
 
-      // Create new user with optional role
-      const user = new User({ email, ...(role && { role }) });
+      // Create new user with all fields
+      const user = new User({ 
+        fullName,
+        email,
+        phoneNumber,
+        primarySkill,
+        otherService,
+        city,
+        state,
+        yearsOfExperience,
+        portfolioLink,
+        notifyEarlyAccess,
+        agreedToTerms
+      });
+      
       await user.save();
 
-      // Send confirmation email
+      // Send personalized confirmation email
       try {
-        await emailService.sendConfirmationEmail(email);
+        await emailService.sendConfirmationEmail(email, fullName, primarySkill);
         
         // Update user as confirmed
         user.confirmed = true;
@@ -65,21 +88,77 @@ export class WaitlistController {
 
   async getWaitlistStats(req: Request, res: Response): Promise<void> {
     try {
-    const [totalUsers, confirmedUsers, users] = await Promise.all([
-      User.countDocuments(),
-      User.countDocuments({ confirmed: true }),
-      User.find().select('-__v')
-    ]);
+      const [
+        totalUsers, 
+        confirmedUsers,
+        bySkill,
+        byState,
+        byExperience
+      ] = await Promise.all([
+        User.countDocuments(),
+        User.countDocuments({ confirmed: true }),
+        
+        // Group by primary skill
+        User.aggregate([
+          {
+            $group: {
+              _id: '$primarySkill',
+              count: { $sum: 1 }
+            }
+          },
+          { $sort: { count: -1 } }
+        ]),
+        
+        // Group by state
+        User.aggregate([
+          {
+            $group: {
+              _id: '$state',
+              count: { $sum: 1 }
+            }
+          },
+          { $sort: { count: -1 } }
+        ]),
+        
+        // Group by years of experience
+        User.aggregate([
+          {
+            $group: {
+              _id: '$yearsOfExperience',
+              count: { $sum: 1 }
+            }
+          },
+          { $sort: { count: -1 } }
+        ])
+      ]);
 
-    res.json({
-      success: true,
-      stats: {
-        total: totalUsers,
-        confirmed: confirmedUsers,
-        unconfirmed: totalUsers - confirmedUsers,
-        users
-      }
-    });
+      // Format the aggregated data
+      const skillBreakdown = bySkill.reduce((acc, item) => {
+        acc[item._id] = item.count;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const stateBreakdown = byState.reduce((acc, item) => {
+        acc[item._id] = item.count;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const experienceBreakdown = byExperience.reduce((acc, item) => {
+        acc[item._id] = item.count;
+        return acc;
+      }, {} as Record<string, number>);
+
+      res.json({
+        success: true,
+        stats: {
+          total: totalUsers,
+          confirmed: confirmedUsers,
+          unconfirmed: totalUsers - confirmedUsers,
+          bySkill: skillBreakdown,
+          byState: stateBreakdown,
+          byExperience: experienceBreakdown
+        }
+      });
     } catch (error) {
       console.error('Stats error:', error);
       res.status(500).json({
