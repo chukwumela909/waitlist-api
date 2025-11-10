@@ -7,6 +7,9 @@ import { waitlistValidation } from '../validation/emailValidation';
 export class WaitlistController {
   async joinWaitlist(req: Request, res: Response): Promise<void> {
     try {
+      // Log incoming request for debugging
+      console.log('📥 Received request body:', JSON.stringify(req.body, null, 2));
+      
       // Validate all form fields
       const { error, value } = waitlistValidation.validate(req.body, { 
         abortEarly: false,
@@ -14,6 +17,7 @@ export class WaitlistController {
       });
       
       if (error) {
+        console.log('❌ Validation failed:', error.details);
         const errorMessage = error.details[0]?.message || 'Validation failed';
         res.status(400).json({
           success: false,

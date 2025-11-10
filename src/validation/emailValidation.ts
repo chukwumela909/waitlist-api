@@ -37,7 +37,7 @@ export const waitlistValidation = Joi.object({
     }),
   
   email: Joi.string()
-    .email()
+    .email({ tlds: { allow: false } })  // Allow all TLDs
     .lowercase()
     .trim()
     .required()
@@ -49,7 +49,7 @@ export const waitlistValidation = Joi.object({
   
   phoneNumber: Joi.string()
     .trim()
-    .pattern(/^(\+234|0)[789][01]\d{8}$/)
+    .pattern(/^(\+?234|0)[789]\d{9}$/)
     .required()
     .messages({
       'string.empty': 'Phone number is required',
