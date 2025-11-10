@@ -2,7 +2,6 @@
 import { Request, Response } from 'express';
 import { User, IUser } from '../models/user';
 import { emailService } from '../services/emailService';
-import { waitlistValidation } from '../validation/emailValidation';
 
 export class WaitlistController {
   async joinWaitlist(req: Request, res: Response): Promise<void> {
@@ -10,28 +9,8 @@ export class WaitlistController {
       // Log incoming request for debugging
       console.log('📥 Received request body:', JSON.stringify(req.body, null, 2));
       
-      // Validate all form fields
-      const { error, value } = waitlistValidation.validate(req.body, { 
-        abortEarly: false,
-        stripUnknown: true 
-      });
-      
-      if (error) {
-        console.log('❌ Validation failed:', error.details);
-        const errorMessage = error.details[0]?.message || 'Validation failed';
-        res.status(400).json({
-          success: false,
-          error: errorMessage,
-          details: error.details.map(d => ({
-            field: d.path.join('.'),
-            message: d.message
-          }))
-        });
-        return;
-      }
-
       const { email, fullName, phoneNumber, primarySkill, otherService, city, state, 
-              yearsOfExperience, portfolioLink, notifyEarlyAccess, agreedToTerms } = value;
+              yearsOfExperience, portfolioLink, notifyEarlyAccess, agreedToTerms } = req.body;
 
       // Check if email already exists
       const existingUser = await User.findOne({ email });

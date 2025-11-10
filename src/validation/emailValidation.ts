@@ -37,12 +37,10 @@ export const waitlistValidation = Joi.object({
     }),
   
   email: Joi.string()
-    .email({ tlds: { allow: false } })  // Allow all TLDs
-    .lowercase()
     .trim()
+    .lowercase()
     .required()
     .messages({
-      'string.email': 'Please provide a valid email address',
       'string.empty': 'Email is required',
       'any.required': 'Email is required'
     }),
