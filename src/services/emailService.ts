@@ -360,12 +360,20 @@ class EmailService {
     }
 
     async sendConfirmationEmail(email: string, fullName: string, primarySkill: string): Promise<void> {
-        await this.transporter.sendMail({
+        // Add timeout to prevent email sending from hanging
+        const emailPromise = this.transporter.sendMail({
             from: 'Task Hub <hello@ngtaskhub.com>',
             to: email,
             subject: `🎉 Welcome to Task Hub, ${fullName.split(' ')[0]}!`,
             html: this.getConfirmationEmailHTML(email, fullName, primarySkill)
         });
+
+        // Timeout after 10 seconds
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Email sending timeout after 10s')), 10000)
+        );
+
+        await Promise.race([emailPromise, timeoutPromise]);
     }
 }
 

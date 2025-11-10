@@ -56,26 +56,25 @@ export class WaitlistController {
       
       await user.save();
 
-      // Send personalized confirmation email
-      try {
-        await emailService.sendConfirmationEmail(email, fullName, primarySkill);
-        
-        // Update user as confirmed
-        user.confirmed = true;
-        await user.save();
+      // Send personalized confirmation email asynchronously (non-blocking)
+      // Don't wait for email to send before responding
+      emailService.sendConfirmationEmail(email, fullName, primarySkill)
+        .then(async () => {
+          // Update user as confirmed after email is sent
+          user.confirmed = true;
+          await user.save();
+          console.log(`✅ Confirmation email sent to ${email}`);
+        })
+        .catch((emailError) => {
+          console.error('❌ Email sending failed:', emailError);
+          // User is still saved even if email fails
+        });
 
-        res.status(201).json({
-          success: true,
-          message: 'Successfully joined the waitlist! Check your email for confirmation.'
-        });
-      } catch (emailError) {
-        console.error('Email sending failed:', emailError);
-        // User is still saved even if email fails
-        res.status(201).json({
-          success: true,
-          message: 'Successfully joined the waitlist! (Email confirmation may be delayed)'
-        });
-      }
+      // Respond immediately without waiting for email
+      res.status(201).json({
+        success: true,
+        message: 'Successfully joined the waitlist! Check your email for confirmation.'
+      });
 
     } catch (error) {
       console.error('Waitlist signup error:', error);
