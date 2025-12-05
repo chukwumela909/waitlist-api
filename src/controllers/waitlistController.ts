@@ -75,7 +75,8 @@ export class WaitlistController {
         confirmedUsers,
         bySkill,
         byState,
-        byExperience
+        byExperience,
+        users
       ] = await Promise.all([
         User.countDocuments(),
         User.countDocuments({ confirmed: true }),
@@ -111,7 +112,16 @@ export class WaitlistController {
             }
           },
           { $sort: { count: -1 } }
-        ])
+        ]),
+        
+        // Fetch all users for the admin dashboard
+        User.find({}, {
+          email: 1,
+          fullName: 1,
+          confirmed: 1,
+          createdAt: 1,
+          joinedAt: 1
+        }).sort({ createdAt: -1 })
       ]);
 
       // Format the aggregated data
@@ -136,6 +146,7 @@ export class WaitlistController {
           total: totalUsers,
           confirmed: confirmedUsers,
           unconfirmed: totalUsers - confirmedUsers,
+          users: users,
           bySkill: skillBreakdown,
           byState: stateBreakdown,
           byExperience: experienceBreakdown
